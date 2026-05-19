@@ -53,8 +53,8 @@ export default function AuthPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold">MPaFlow</CardTitle>
+        <CardHeader className="items-center space-y-3 text-center">
+          <img src="/mpaflow.png" alt="MPaFlow" className="h-40 max-w-full w-auto object-contain" />
           <CardDescription>Sistema de Controle de Concretagem</CardDescription>
         </CardHeader>
         <CardContent>
