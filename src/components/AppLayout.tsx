@@ -1,6 +1,6 @@
 import { NavLink } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { LayoutDashboard, Building2, Truck, Target, Factory, LogOut } from 'lucide-react';
+import { LayoutDashboard, Building2, Truck, Factory, LogOut } from 'lucide-react';
 import { NotificationCenter } from './NotificationCenter';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -22,11 +22,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-background flex">
       <aside className="hidden md:flex w-56 flex-col border-r bg-card shrink-0 sticky top-0 h-screen">
-        <div className="flex items-center gap-2.5 px-5 py-5 border-b">
-          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-            <Target className="w-4 h-4 text-primary-foreground" />
-          </div>
-          <span className="text-lg font-bold text-card-foreground tracking-tight">MPaFlow</span>
+        <div className="flex items-center px-5 py-5 border-b">
+          <img src="/logofinaldash.png" alt="MPaFlow" className="h-17 max-w-full w-auto object-contain" />
         </div>
         <nav className="flex-1 p-3 space-y-1">
           {links.map(({ to, label, icon: Icon }) => (
@@ -55,10 +52,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         <header className="border-b bg-card/80 backdrop-blur-sm sticky top-0 z-10">
           <div className="flex items-center justify-between px-4 sm:px-6 py-3">
             <div className="flex items-center gap-2.5 md:hidden">
-              <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
-                <Target className="w-3.5 h-3.5 text-primary-foreground" />
-              </div>
-              <span className="text-base font-bold text-card-foreground">MPaFlow</span>
+              <img src="/logofinaldash.png" alt="MPaFlow" className="h-10 max-w-[160px] w-auto object-contain" />
             </div>
             <div className="hidden md:block" />
             <div className="flex items-center gap-2">
