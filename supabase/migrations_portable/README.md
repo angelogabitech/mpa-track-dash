@@ -14,6 +14,7 @@ Quando você quiser sair do Lovable Cloud e levar o app para sua própria infrae
    - `001_init_auth.sql` — cria tabela `profiles`, RLS, trigger de auto-criação
    - `002_init_mpaflow_tables.sql` — cria `pavimentos`, `trucks` e `test_specimens`
    - `003_tighten_domain_rls.sql` — reforça RLS dos relacionamentos
+   - `004_collaborative_obras.sql` — adiciona obras compartilhadas e acesso completo aos membros
 4. Atualize o arquivo `.env` do projeto com as **novas credenciais**:
    ```
    VITE_SUPABASE_PROJECT_ID="<seu-novo-id>"
@@ -28,3 +29,4 @@ Quando você quiser sair do Lovable Cloud e levar o app para sua própria infrae
 - `001_init_auth.sql` — Profiles + RLS + triggers (auth básico)
 - `002_init_mpaflow_tables.sql` — Tabelas de pavimentos, caminhões e corpos de prova
 - `003_tighten_domain_rls.sql` — Policies mais restritivas para caminhões e corpos de prova
+- `004_collaborative_obras.sql` — Obras, membros, convite por e-mail e RLS colaborativa

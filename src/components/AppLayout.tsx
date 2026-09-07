@@ -2,6 +2,7 @@ import { NavLink } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { LayoutDashboard, Building2, Truck, Factory, LogOut } from 'lucide-react';
 import { NotificationCenter } from './NotificationCenter';
+import { ObraSwitcher } from './ObraSwitcher';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
@@ -51,11 +52,12 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         {/* Top bar with notification bell */}
         <header className="border-b bg-card/80 backdrop-blur-sm sticky top-0 z-10">
           <div className="flex items-center justify-between px-4 sm:px-6 py-3">
-            <div className="flex items-center gap-2.5 md:hidden">
+            <div className="hidden items-center gap-2.5 sm:flex md:hidden">
               <img src="/logofinaldash.png" alt="MPaFlow" className="h-10 max-w-[160px] w-auto object-contain" />
             </div>
             <div className="hidden md:block" />
             <div className="flex items-center gap-2">
+              <ObraSwitcher />
               {user && (
                 <span className="hidden sm:inline text-xs text-muted-foreground truncate max-w-[200px]">
                   {user.email}

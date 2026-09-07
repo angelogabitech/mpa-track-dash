@@ -17,8 +17,18 @@ import type { Database } from '@/integrations/supabase/types';
 type PavimentoRow = Database['public']['Tables']['pavimentos']['Row'];
 type TruckRow = Database['public']['Tables']['trucks']['Row'];
 type SpecimenRow = Database['public']['Tables']['test_specimens']['Row'];
+type ObraRow = Database['public']['Tables']['obras']['Row'];
+
+export interface Obra {
+  id: string;
+  name: string;
+}
 
 interface DataContextType {
+  obras: Obra[];
+  activeObraId: string | null;
+  selectObra: (obraId: string) => void;
+  inviteMember: (email: string) => Promise<boolean>;
   pavimentos: Pavimento[];
   loading: boolean;
   addPavimento: (pav: Omit<Pavimento, 'id' | 'trucks'>) => Promise<boolean>;
@@ -115,11 +125,15 @@ function reportError(message: string, error: unknown) {
 
 export function DataProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
+  const [obras, setObras] = useState<Obra[]>([]);
+  const [activeObraId, setActiveObraId] = useState<string | null>(null);
   const [pavimentos, setPavimentos] = useState<Pavimento[]>([]);
   const [loading, setLoading] = useState(true);
 
   const loadRemoteData = useCallback(async () => {
     if (!user) {
+      setObras([]);
+      setActiveObraId(null);
       setPavimentos([]);
       setLoading(false);
       return;
@@ -127,29 +141,78 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
     setLoading(true);
     try {
-      const [
-        { data: pavRows, error: pavError },
-        { data: truckRows, error: truckError },
-        { data: specimenRows, error: specimenError },
-      ] = await Promise.all([
-        supabase.from('pavimentos').select('*').eq('user_id', user.id).order('date', { ascending: false }),
-        supabase.from('trucks').select('*').eq('user_id', user.id).order('created_at', { ascending: true }),
-        supabase.from('test_specimens').select('*').eq('user_id', user.id).order('created_at', { ascending: true }),
-      ]);
+      const { data: obraRows, error: obraError } = await supabase
+        .from('obras')
+        .select('*')
+        .order('created_at', { ascending: true });
+
+      if (obraError) throw obraError;
+
+      const availableObras: Obra[] = ((obraRows || []) as ObraRow[]).map((row) => ({
+        id: row.id,
+        name: row.name,
+      }));
+      setObras(availableObras);
+
+      const storageKey = `mpaflow-active-obra:${user.id}`;
+      const storedObraId = localStorage.getItem(storageKey);
+      const selectedObraId =
+        (activeObraId && availableObras.some((obra) => obra.id === activeObraId) && activeObraId)
+        || (storedObraId && availableObras.some((obra) => obra.id === storedObraId) && storedObraId)
+        || availableObras[0]?.id
+        || null;
+
+      if (selectedObraId !== activeObraId) setActiveObraId(selectedObraId);
+
+      if (!selectedObraId) {
+        setPavimentos([]);
+        return;
+      }
+
+      localStorage.setItem(storageKey, selectedObraId);
+
+      const { data: pavRows, error: pavError } = await supabase
+        .from('pavimentos')
+        .select('*')
+        .eq('obra_id', selectedObraId)
+        .order('date', { ascending: false });
 
       if (pavError) throw pavError;
-      if (truckError) throw truckError;
-      if (specimenError) throw specimenError;
+
+      const pavimentoIds = (pavRows || []).map((row) => row.id);
+      let truckRows: TruckRow[] = [];
+      let specimenRows: SpecimenRow[] = [];
+
+      if (pavimentoIds.length > 0) {
+        const { data, error } = await supabase
+          .from('trucks')
+          .select('*')
+          .in('pavimento_id', pavimentoIds)
+          .order('created_at', { ascending: true });
+        if (error) throw error;
+        truckRows = data || [];
+      }
+
+      const truckIds = truckRows.map((row) => row.id);
+      if (truckIds.length > 0) {
+        const { data, error } = await supabase
+          .from('test_specimens')
+          .select('*')
+          .in('truck_id', truckIds)
+          .order('created_at', { ascending: true });
+        if (error) throw error;
+        specimenRows = data || [];
+      }
 
       const specimensByTruck = new Map<string, TestSpecimen[]>();
-      (specimenRows || []).forEach((row) => {
+      specimenRows.forEach((row) => {
         const list = specimensByTruck.get(row.truck_id) || [];
         list.push(mapSpecimen(row));
         specimensByTruck.set(row.truck_id, list);
       });
 
       const trucksByPavimento = new Map<string, Truck[]>();
-      (truckRows || []).forEach((row) => {
+      truckRows.forEach((row) => {
         const specimens = specimensByTruck.get(row.id) || [];
         const list = trucksByPavimento.get(row.pavimento_id) || [];
         list.push(mapTruck(row, specimens));
@@ -162,19 +225,43 @@ export function DataProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [activeObraId, user]);
 
   useEffect(() => {
     void loadRemoteData();
   }, [loadRemoteData]);
 
+  const selectObra = useCallback((obraId: string) => {
+    if (!user || !obras.some((obra) => obra.id === obraId)) return;
+    localStorage.setItem(`mpaflow-active-obra:${user.id}`, obraId);
+    setPavimentos([]);
+    setActiveObraId(obraId);
+  }, [obras, user]);
+
+  const inviteMember = useCallback(async (email: string) => {
+    if (!activeObraId || !email.trim()) return false;
+    try {
+      const { error } = await supabase.rpc('add_obra_member_by_email', {
+        p_obra_id: activeObraId,
+        p_email: email.trim(),
+      });
+      if (error) throw error;
+      toast.success('Usuario adicionado a obra com acesso completo.');
+      return true;
+    } catch (error) {
+      reportError('Nao foi possivel compartilhar a obra. Confirme se o usuario ja possui cadastro.', error);
+      return false;
+    }
+  }, [activeObraId]);
+
   const addPavimento = useCallback(async (pav: Omit<Pavimento, 'id' | 'trucks'>) => {
-    if (!user) return false;
+    if (!user || !activeObraId) return false;
 
     try {
       const { data, error } = await supabase
         .from('pavimentos')
         .insert({
+          obra_id: activeObraId,
           user_id: user.id,
           name: pav.name,
           date: pav.date,
@@ -193,13 +280,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
       reportError('Nao foi possivel salvar o pavimento.', error);
       return false;
     }
-  }, [user]);
+  }, [activeObraId, user]);
 
   const removePavimento = useCallback(async (id: string) => {
     if (!user) return false;
 
     try {
-      const { error } = await supabase.from('pavimentos').delete().eq('id', id).eq('user_id', user.id);
+      const { error } = await supabase.from('pavimentos').delete().eq('id', id);
       if (error) throw error;
 
       setPavimentos((prev) => prev.filter((p) => p.id !== id));
@@ -276,7 +363,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     if (!user) return false;
 
     try {
-      const { error } = await supabase.from('trucks').delete().eq('id', truckId).eq('user_id', user.id);
+      const { error } = await supabase.from('trucks').delete().eq('id', truckId);
       if (error) throw error;
 
       setPavimentos((prev) => prev.map((p) =>
@@ -328,8 +415,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         const { error: updateError } = await supabase
           .from('trucks')
           .update(truckDerivedUpdate(updatedTruck))
-          .eq('id', truckId)
-          .eq('user_id', user.id);
+          .eq('id', truckId);
 
         if (updateError) throw updateError;
       }
@@ -346,7 +432,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     if (!user) return false;
 
     try {
-      const { error } = await supabase.from('test_specimens').delete().eq('id', specimenId).eq('user_id', user.id);
+      const { error } = await supabase.from('test_specimens').delete().eq('id', specimenId);
       if (error) throw error;
 
       let updatedTruck: Truck | null = null;
@@ -369,8 +455,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         const { error: updateError } = await supabase
           .from('trucks')
           .update(truckDerivedUpdate(updatedTruck))
-          .eq('id', truckId)
-          .eq('user_id', user.id);
+          .eq('id', truckId);
 
         if (updateError) throw updateError;
       }
@@ -390,8 +475,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       const { error } = await supabase
         .from('trucks')
         .update({ calculist_approval: approval })
-        .eq('id', truckId)
-        .eq('user_id', user.id);
+        .eq('id', truckId);
 
       if (error) throw error;
 
@@ -415,10 +499,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const clearAllData = useCallback(async () => {
-    if (!user) return false;
+    if (!user || !activeObraId) return false;
 
     try {
-      const { error } = await supabase.from('pavimentos').delete().eq('user_id', user.id);
+      const { error } = await supabase.from('pavimentos').delete().eq('obra_id', activeObraId);
       if (error) throw error;
 
       setPavimentos([]);
@@ -427,10 +511,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
       reportError('Nao foi possivel limpar os dados.', error);
       return false;
     }
-  }, [user]);
+  }, [activeObraId, user]);
 
   return (
     <DataContext.Provider value={{
+      obras,
+      activeObraId,
+      selectObra,
+      inviteMember,
       pavimentos,
       loading,
       addPavimento,

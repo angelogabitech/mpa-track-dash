@@ -14,6 +14,54 @@ export type Database = {
   }
   public: {
     Tables: {
+      obras: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          legacy_owner_id: string | null
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          legacy_owner_id?: string | null
+          name?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          legacy_owner_id?: string | null
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      obra_members: {
+        Row: {
+          added_by: string | null
+          created_at: string
+          obra_id: string
+          user_id: string
+        }
+        Insert: {
+          added_by?: string | null
+          created_at?: string
+          obra_id: string
+          user_id: string
+        }
+        Update: {
+          added_by?: string | null
+          created_at?: string
+          obra_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -42,6 +90,7 @@ export type Database = {
         Row: {
           created_at: string
           date: string
+          obra_id: string
           id: string
           name: string
           responsible: string
@@ -53,6 +102,7 @@ export type Database = {
         Insert: {
           created_at?: string
           date: string
+          obra_id: string
           id?: string
           name: string
           responsible?: string
@@ -64,6 +114,7 @@ export type Database = {
         Update: {
           created_at?: string
           date?: string
+          obra_id?: string
           id?: string
           name?: string
           responsible?: string
@@ -214,7 +265,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      add_obra_member_by_email: {
+        Args: {
+          p_email: string
+          p_obra_id: string
+        }
+        Returns: string
+      }
     }
     Enums: {
       calculist_approval: "approved" | "rejected" | "analyzing"
