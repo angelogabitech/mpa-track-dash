@@ -1,5 +1,6 @@
 import { FormEvent, useState } from 'react';
 import { Building2, ChevronDown, Loader2, UserPlus } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
 import { useData } from '@/context/DataContext';
 import { Button } from '@/components/ui/button';
 import {
@@ -15,8 +16,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
 export function ObraSwitcher() {
+  const { isAdmin } = useAuth();
   const { obras, activeObraId, selectObra, inviteMember } = useData();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
@@ -25,10 +28,11 @@ export function ObraSwitcher() {
     if (!email.trim()) return;
 
     setSubmitting(true);
-    const invited = await inviteMember(email);
+    const invited = await inviteMember(email, displayName);
     setSubmitting(false);
 
     if (invited) {
+      setDisplayName('');
       setEmail('');
       setDialogOpen(false);
     }
@@ -55,48 +59,64 @@ export function ObraSwitcher() {
         <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
       </div>
 
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogTrigger asChild>
-          <Button variant="outline" size="icon" className="h-9 w-9" title="Compartilhar obra">
-            <UserPlus className="h-4 w-4" />
-            <span className="sr-only">Compartilhar obra</span>
-          </Button>
-        </DialogTrigger>
-        <DialogContent className="sm:max-w-md">
-          <form onSubmit={handleInvite} className="space-y-5">
-            <DialogHeader>
-              <DialogTitle>Compartilhar obra</DialogTitle>
-              <DialogDescription>
-                O usuário terá acesso completo a todos os dados desta obra. Ele precisa ter criado uma conta antes do convite.
-              </DialogDescription>
-            </DialogHeader>
+      {isAdmin && (
+        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <DialogTrigger asChild>
+            <Button variant="outline" size="icon" className="h-9 w-9" title="Adicionar usuário à obra">
+              <UserPlus className="h-4 w-4" />
+              <span className="sr-only">Adicionar usuário à obra</span>
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-md">
+            <form onSubmit={handleInvite} className="space-y-5">
+              <DialogHeader>
+                <DialogTitle>Adicionar usuário à obra</DialogTitle>
+                <DialogDescription>
+                  O sistema criará o acesso, enviará um convite por e-mail e concederá permissão completa nesta obra. Contas existentes apenas serão vinculadas.
+                </DialogDescription>
+              </DialogHeader>
 
-            <div className="space-y-2">
-              <Label htmlFor="member-email">E-mail do usuário</Label>
-              <Input
-                id="member-email"
-                type="email"
-                autoComplete="email"
-                placeholder="engenheiro@empresa.com"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                disabled={submitting}
-                required
-              />
-            </div>
+              <div className="space-y-2">
+                <Label htmlFor="member-name">Nome</Label>
+                <Input
+                  id="member-name"
+                  type="text"
+                  autoComplete="name"
+                  placeholder="Nome do profissional"
+                  value={displayName}
+                  onChange={(event) => setDisplayName(event.target.value)}
+                  maxLength={120}
+                  disabled={submitting}
+                />
+              </div>
 
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setDialogOpen(false)} disabled={submitting}>
-                Cancelar
-              </Button>
-              <Button type="submit" disabled={submitting || !email.trim()}>
-                {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />}
-                Conceder acesso completo
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+              <div className="space-y-2">
+                <Label htmlFor="member-email">E-mail</Label>
+                <Input
+                  id="member-email"
+                  type="email"
+                  autoComplete="email"
+                  placeholder="engenheiro@empresa.com"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  disabled={submitting}
+                  required
+                />
+              </div>
+
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setDialogOpen(false)} disabled={submitting}>
+                  Cancelar
+                </Button>
+                <Button type="submit" disabled={submitting || !email.trim()}>
+                  {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />}
+                  Criar acesso
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }

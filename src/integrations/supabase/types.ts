@@ -62,6 +62,24 @@ export type Database = {
         }
         Relationships: []
       }
+      platform_admins: {
+        Row: {
+          added_by: string | null
+          created_at: string
+          user_id: string
+        }
+        Insert: {
+          added_by?: string | null
+          created_at?: string
+          user_id: string
+        }
+        Update: {
+          added_by?: string | null
+          created_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -265,6 +283,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_user_id_by_email_for_admin: {
+        Args: {
+          p_email: string
+        }
+        Returns: string | null
+      }
+      is_platform_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
       add_obra_member_by_email: {
         Args: {
           p_email: string

@@ -13,6 +13,7 @@ import PavimentoDetailPage from "./pages/PavimentoDetailPage.tsx";
 import CaminhoesPage from "./pages/CaminhoesPage.tsx";
 import FornecedoresPage from "./pages/FornecedoresPage.tsx";
 import AuthPage from "./pages/AuthPage.tsx";
+import SetPasswordPage from "./pages/SetPasswordPage.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -28,6 +29,7 @@ const App = () => (
           <DataProvider>
             <Routes>
               <Route path="/auth" element={<AuthPage />} />
+              <Route path="/definir-senha" element={<SetPasswordPage />} />
               <Route
                 path="/*"
                 element={

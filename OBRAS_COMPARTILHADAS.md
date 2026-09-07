@@ -1,5 +1,7 @@
 # Obras compartilhadas no MPaFlow
 
+> **Atualização:** o cadastro público e o compartilhamento por qualquer membro foram substituídos pelo convite administrativo. Para o fluxo atual, consulte ACESSO_FECHADO_E_CONVITES.md. Este documento permanece como referência da estrutura de obras e RLS.
+
 ## Regra de negócio implementada
 
 O acesso deixou de ser limitado ao usuário que criou cada registro. Agora a unidade de isolamento é a **obra**.

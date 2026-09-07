@@ -1,107 +1,118 @@
-import { useState, useEffect } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { toast } from 'sonner';
-import { Loader2 } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card';
 
 export default function AuthPage() {
-  const { user, signIn, signUp, loading } = useAuth();
+  const { user, signIn, requestPasswordReset, loading } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [displayName, setDisplayName] = useState('');
+  const [resetMode, setResetMode] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (user && !loading) navigate('/', { replace: true });
   }, [user, loading, navigate]);
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleLogin = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
     setSubmitting(true);
-    const { error } = await signIn(email, password);
+    const { error } = await signIn(email.trim(), password);
     setSubmitting(false);
-    if (error) toast.error(error.message);
-    else {
-      toast.success('Login realizado com sucesso!');
-      navigate('/', { replace: true });
+
+    if (error) {
+      toast.error('E-mail ou senha inválidos.');
+      return;
     }
+
+    toast.success('Login realizado com sucesso!');
+    navigate('/', { replace: true });
   };
 
-  const handleSignUp = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handlePasswordReset = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
     setSubmitting(true);
-    const { error } = await signUp(email, password, displayName);
+    const { error } = await requestPasswordReset(email.trim());
     setSubmitting(false);
-    if (error) toast.error(error.message);
-    else toast.success('Cadastro realizado! Você já pode fazer login.');
+
+    if (error) {
+      toast.error('Não foi possível solicitar a recuperação de senha.');
+      return;
+    }
+
+    toast.success('Se o e-mail estiver cadastrado, você receberá as instruções de acesso.');
+    setResetMode(false);
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="flex min-h-screen items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+    <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="items-center space-y-3 text-center">
-          <img src="/mpaflow.png" alt="MPaFlow" className="h-40 max-w-full w-auto object-contain" />
-          <CardDescription>Sistema de Controle de Concretagem</CardDescription>
+          <img src="/mpaflow.png" alt="MPaFlow" className="h-40 max-w-full object-contain" />
+          <CardDescription>
+            {resetMode
+              ? 'Informe seu e-mail para receber um link de recuperação.'
+              : 'Acesso exclusivo para usuários convidados pelo administrador.'}
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="login" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="login">Entrar</TabsTrigger>
-              <TabsTrigger value="signup">Cadastrar</TabsTrigger>
-            </TabsList>
+          <form onSubmit={resetMode ? handlePasswordReset : handleLogin} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="auth-email">E-mail</Label>
+              <Input
+                id="auth-email"
+                type="email"
+                autoComplete="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                required
+              />
+            </div>
 
-            <TabsContent value="login">
-              <form onSubmit={handleLogin} className="space-y-4 mt-4">
-                <div className="space-y-2">
-                  <Label htmlFor="login-email">Email</Label>
-                  <Input id="login-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="login-password">Senha</Label>
-                  <Input id="login-password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} />
-                </div>
-                <Button type="submit" className="w-full" disabled={submitting}>
-                  {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Entrar
-                </Button>
-              </form>
-            </TabsContent>
+            {!resetMode && (
+              <div className="space-y-2">
+                <Label htmlFor="auth-password">Senha</Label>
+                <Input
+                  id="auth-password"
+                  type="password"
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  required
+                  minLength={6}
+                />
+              </div>
+            )}
 
-            <TabsContent value="signup">
-              <form onSubmit={handleSignUp} className="space-y-4 mt-4">
-                <div className="space-y-2">
-                  <Label htmlFor="signup-name">Nome de exibição</Label>
-                  <Input id="signup-name" type="text" value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Seu nome" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signup-email">Email</Label>
-                  <Input id="signup-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signup-password">Senha</Label>
-                  <Input id="signup-password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} />
-                </div>
-                <Button type="submit" className="w-full" disabled={submitting}>
-                  {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Cadastrar
-                </Button>
-              </form>
-            </TabsContent>
-          </Tabs>
+            <Button type="submit" className="w-full" disabled={submitting}>
+              {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
+              {resetMode ? 'Enviar link de recuperação' : 'Entrar'}
+            </Button>
+
+            <Button
+              type="button"
+              variant="link"
+              className="w-full"
+              onClick={() => setResetMode((current) => !current)}
+              disabled={submitting}
+            >
+              {resetMode ? 'Voltar para o login' : 'Esqueci minha senha'}
+            </Button>
+          </form>
         </CardContent>
       </Card>
     </div>

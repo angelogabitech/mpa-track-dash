@@ -1,1 +1,4 @@
-project_id = "getfqzchexvfhqlvmmyx"
+project_id = "saondfteyklgetjjsffy"
+
+[functions.invite-obra-user]
+verify_jwt = true

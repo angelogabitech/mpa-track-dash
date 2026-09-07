@@ -28,7 +28,7 @@ interface DataContextType {
   obras: Obra[];
   activeObraId: string | null;
   selectObra: (obraId: string) => void;
-  inviteMember: (email: string) => Promise<boolean>;
+  inviteMember: (email: string, displayName: string) => Promise<boolean>;
   pavimentos: Pavimento[];
   loading: boolean;
   addPavimento: (pav: Omit<Pavimento, 'id' | 'trucks'>) => Promise<boolean>;
@@ -238,18 +238,34 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setActiveObraId(obraId);
   }, [obras, user]);
 
-  const inviteMember = useCallback(async (email: string) => {
+  const inviteMember = useCallback(async (email: string, displayName: string) => {
     if (!activeObraId || !email.trim()) return false;
+
     try {
-      const { error } = await supabase.rpc('add_obra_member_by_email', {
-        p_obra_id: activeObraId,
-        p_email: email.trim(),
+      const { data, error } = await supabase.functions.invoke<{
+        status?: 'invited' | 'linked';
+        invitationSent?: boolean;
+        error?: string;
+      }>('invite-obra-user', {
+        body: {
+          obraId: activeObraId,
+          email: email.trim(),
+          displayName: displayName.trim(),
+        },
       });
+
       if (error) throw error;
-      toast.success('Usuario adicionado a obra com acesso completo.');
+      if (!data?.status) throw new Error(data?.error || 'Resposta inválida do serviço de convites.');
+
+      if (data.invitationSent) {
+        toast.success('Convite enviado e usuário vinculado à obra.');
+      } else {
+        toast.success('Usuário existente vinculado à obra com acesso completo.');
+      }
+
       return true;
     } catch (error) {
-      reportError('Nao foi possivel compartilhar a obra. Confirme se o usuario ja possui cadastro.', error);
+      reportError('Não foi possível adicionar o usuário à obra.', error);
       return false;
     }
   }, [activeObraId]);
