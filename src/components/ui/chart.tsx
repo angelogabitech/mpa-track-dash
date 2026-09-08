@@ -1,5 +1,6 @@
 import * as React from "react";
 import * as RechartsPrimitive from "recharts";
+import type { LegendPayload, TooltipPayloadEntry, TooltipValueType } from "recharts";
 
 import { cn } from "@/lib/utils";
 
@@ -94,8 +95,8 @@ const ChartTooltipContent = React.forwardRef<
   React.ComponentProps<typeof RechartsPrimitive.Tooltip> &
     React.ComponentProps<"div"> & {
       active?: boolean;
-      payload?: any[];
-      label?: any;
+      payload?: ReadonlyArray<TooltipPayloadEntry<TooltipValueType, string | number>>;
+      label?: React.ReactNode;
       hideLabel?: boolean;
       hideIndicator?: boolean;
       indicator?: "line" | "dot" | "dashed";
@@ -177,7 +178,7 @@ const ChartTooltipContent = React.forwardRef<
                 )}
               >
                 {formatter && item?.value !== undefined && item.name ? (
-                  formatter(item.value, item.name, item, index, item.payload)
+                  formatter(item.value, item.name, item, index, payload)
                 ) : (
                   <>
                     {itemConfig?.icon ? (
@@ -234,7 +235,7 @@ const ChartLegendContent = React.forwardRef<
   HTMLDivElement,
   React.ComponentProps<"div"> &
   React.ComponentProps<"div"> & {
-      payload?: any[];
+      payload?: ReadonlyArray<LegendPayload>;
       verticalAlign?: "top" | "bottom";
       hideIcon?: boolean;
       nameKey?: string;

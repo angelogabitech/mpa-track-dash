@@ -79,6 +79,7 @@ export default function AuthPage() {
                 autoComplete="email"
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
+                maxLength={254}
                 required
               />
             </div>
@@ -94,6 +95,7 @@ export default function AuthPage() {
                   onChange={(event) => setPassword(event.target.value)}
                   required
                   minLength={6}
+                  maxLength={128}
                 />
               </div>
             )}

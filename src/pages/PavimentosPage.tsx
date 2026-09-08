@@ -24,10 +24,20 @@ export default function PavimentosPage() {
   const [saving, setSaving] = useState(false);
 
   const handleAdd = async () => {
-    if (!name || !date || !responsible || !supplier) return;
-    const piece = structuralPiece === 'Outro' ? customPiece : structuralPiece;
+    const trimmedName = name.trim();
+    const trimmedResponsible = responsible.trim();
+    const trimmedSupplier = supplier.trim();
+    const piece = (structuralPiece === 'Outro' ? customPiece : structuralPiece).trim();
+    if (!trimmedName || !date || !trimmedResponsible || !trimmedSupplier) return;
+
     setSaving(true);
-    const saved = await addPavimento({ name, date, responsible, supplier, structuralPiece: piece });
+    const saved = await addPavimento({
+      name: trimmedName,
+      date,
+      responsible: trimmedResponsible,
+      supplier: trimmedSupplier,
+      structuralPiece: piece,
+    });
     setSaving(false);
     if (!saved) return;
 
@@ -132,7 +142,7 @@ export default function PavimentosPage() {
           <div className="space-y-4">
             <div>
               <label className="text-sm font-medium text-foreground">Nome</label>
-              <input value={name} onChange={e => setName(e.target.value)} placeholder="Ex: 4º Pavimento" className={inputClass} />
+              <input value={name} onChange={e => setName(e.target.value)} placeholder="Ex: 4º Pavimento" maxLength={120} className={inputClass} />
             </div>
             <div>
               <label className="text-sm font-medium text-foreground">Data</label>
@@ -140,11 +150,11 @@ export default function PavimentosPage() {
             </div>
             <div>
               <label className="text-sm font-medium text-foreground">Responsável</label>
-              <input value={responsible} onChange={e => setResponsible(e.target.value)} placeholder="Ex: Eng. João" className={inputClass} />
+              <input value={responsible} onChange={e => setResponsible(e.target.value)} placeholder="Ex: Eng. João" maxLength={120} className={inputClass} />
             </div>
             <div>
               <label className="text-sm font-medium text-foreground">Fornecedor (Concreteira)</label>
-              <input value={supplier} onChange={e => setSupplier(e.target.value)} placeholder="Ex: Concreteira Alpha" className={inputClass} />
+              <input value={supplier} onChange={e => setSupplier(e.target.value)} placeholder="Ex: Concreteira Alpha" maxLength={120} className={inputClass} />
             </div>
             <div>
               <label className="text-sm font-medium text-foreground">Peça Estrutural</label>
@@ -159,7 +169,7 @@ export default function PavimentosPage() {
             {structuralPiece === 'Outro' && (
               <div>
                 <label className="text-sm font-medium text-foreground">Especifique a peça</label>
-                <input value={customPiece} onChange={e => setCustomPiece(e.target.value)} placeholder="Ex: Cortina" className={inputClass} />
+                <input value={customPiece} onChange={e => setCustomPiece(e.target.value)} placeholder="Ex: Cortina" maxLength={120} className={inputClass} />
               </div>
             )}
           </div>

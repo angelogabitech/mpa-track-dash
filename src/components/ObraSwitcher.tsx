@@ -99,6 +99,7 @@ export function ObraSwitcher() {
                   placeholder="engenheiro@empresa.com"
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
+                  maxLength={254}
                   disabled={submitting}
                   required
                 />

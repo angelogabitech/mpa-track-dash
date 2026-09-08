@@ -11,6 +11,7 @@ import {
 import { SpecimenAge } from '@/types/mpaflow';
 import { QualityInsights } from '@/components/QualityInsights';
 import { ReportActions } from '@/components/ReportActions';
+import { toast } from 'sonner';
 
 const inputClass = "w-full mt-1 rounded-lg border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring";
 
@@ -84,25 +85,48 @@ export default function PavimentoDetailPage() {
   };
 
   const handleAddTruck = async () => {
-    if (!invoice || !arrDate || !volume || !expectedMPa || !supplier || !slump) return;
+    const trimmedInvoice = invoice.trim();
+    const trimmedSupplier = supplier.trim();
+    const parsedVolume = Number(volume);
+    const parsedExpectedMPa = Number(expectedMPa);
+    const parsedSlump = Number(slump);
+    const parsedSlumpMin = Number(slumpMin);
+    const parsedSlumpMax = Number(slumpMax);
+    const parsedCostPerM3 = Number(costPerM3);
+    const parsedWaterAdded = Number(waterAdded);
+
+    if (!trimmedInvoice || !arrDate || !trimmedSupplier || !volume || !expectedMPa || !slump) return;
+    if (
+      !Number.isFinite(parsedVolume) || parsedVolume < 0 || parsedVolume > 9999
+      || !Number.isFinite(parsedExpectedMPa) || parsedExpectedMPa < 0 || parsedExpectedMPa > 1000
+      || !Number.isFinite(parsedSlump) || parsedSlump < 0 || parsedSlump > 1000
+      || !Number.isFinite(parsedSlumpMin) || parsedSlumpMin < 0 || parsedSlumpMin > 1000
+      || !Number.isFinite(parsedSlumpMax) || parsedSlumpMax < parsedSlumpMin || parsedSlumpMax > 1000
+      || !Number.isFinite(parsedCostPerM3) || parsedCostPerM3 < 0 || parsedCostPerM3 > 10000000
+      || !Number.isFinite(parsedWaterAdded) || parsedWaterAdded < 0 || parsedWaterAdded > 100000
+    ) {
+      toast.error('Revise os valores numéricos informados.');
+      return;
+    }
+
     setSavingTruck(true);
     const saved = await addTruck(pavimento.id, {
-      invoiceNumber: invoice,
+      invoiceNumber: trimmedInvoice,
       arrivalDate: arrDate,
       arrivalTime: arrTime,
       departureTimeFromPlant: departureFromPlant,
       unloadStartTime: unloadStart,
       unloadEndTime: unloadEnd,
       departureTimeFromSite: departureFromSite,
-      volumeM3: parseFloat(volume),
-      expectedMPa: parseFloat(expectedMPa),
-      supplier,
-      slump: parseFloat(slump),
-      slumpMin: parseFloat(slumpMin),
-      slumpMax: parseFloat(slumpMax),
-      costPerM3: parseFloat(costPerM3) || 450,
-      waterAdded: parseFloat(waterAdded) || 0,
-      observation,
+      volumeM3: parsedVolume,
+      expectedMPa: parsedExpectedMPa,
+      supplier: trimmedSupplier,
+      slump: parsedSlump,
+      slumpMin: parsedSlumpMin,
+      slumpMax: parsedSlumpMax,
+      costPerM3: parsedCostPerM3,
+      waterAdded: parsedWaterAdded,
+      observation: observation.trim(),
     });
     setSavingTruck(false);
     if (!saved) return;
@@ -116,11 +140,17 @@ export default function PavimentoDetailPage() {
   };
 
   const handleAddSpecimen = async () => {
+    const parsedMpa = Number(spMpa);
     if (!specimenDialog || !spMpa || !spDate) return;
+    if (!Number.isFinite(parsedMpa) || parsedMpa < 0 || parsedMpa > 1000) {
+      toast.error('Informe um resultado de MPa entre 0 e 1000.');
+      return;
+    }
+
     setSavingSpecimen(true);
     const saved = await addSpecimen(pavimento.id, specimenDialog.truckId, {
       age: spAge,
-      mpaResult: parseFloat(spMpa),
+      mpaResult: parsedMpa,
       ruptureDate: spDate,
     });
     setSavingSpecimen(false);
@@ -266,11 +296,11 @@ export default function PavimentoDetailPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="col-span-2">
                 <label className="text-sm font-medium text-foreground">Nota Fiscal</label>
-                <input value={invoice} onChange={e => setInvoice(e.target.value)} placeholder="NF-001" className={inputClass} />
+                <input value={invoice} onChange={e => setInvoice(e.target.value)} placeholder="NF-001" maxLength={60} className={inputClass} />
               </div>
               <div>
                 <label className="text-sm font-medium text-foreground">Fornecedor</label>
-                <input value={supplier} onChange={e => setSupplier(e.target.value)} placeholder="Concreteira Alpha" className={inputClass} />
+                <input value={supplier} onChange={e => setSupplier(e.target.value)} placeholder="Concreteira Alpha" maxLength={120} className={inputClass} />
               </div>
               <div>
                 <label className="text-sm font-medium text-foreground">Data</label>
@@ -316,31 +346,31 @@ export default function PavimentoDetailPage() {
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                 <div>
                   <label className="text-sm font-medium text-foreground">Volume (m³)</label>
-                  <input type="number" step="0.1" value={volume} onChange={e => setVolume(e.target.value)} placeholder="8.0" className={inputClass} />
+                  <input type="number" min="0" max="9999" step="0.1" value={volume} onChange={e => setVolume(e.target.value)} placeholder="8.0" className={inputClass} />
                 </div>
                 <div>
                   <label className="text-sm font-medium text-foreground">MPa Esperado</label>
-                  <input type="number" step="0.1" value={expectedMPa} onChange={e => setExpectedMPa(e.target.value)} placeholder="30" className={inputClass} />
+                  <input type="number" min="0" max="1000" step="0.1" value={expectedMPa} onChange={e => setExpectedMPa(e.target.value)} placeholder="30" className={inputClass} />
                 </div>
                 <div>
                   <label className="text-sm font-medium text-foreground">Slump (cm)</label>
-                  <input type="number" step="0.5" value={slump} onChange={e => setSlump(e.target.value)} placeholder="12" className={inputClass} />
+                  <input type="number" min="0" max="1000" step="0.5" value={slump} onChange={e => setSlump(e.target.value)} placeholder="12" className={inputClass} />
                 </div>
                 <div>
                   <label className="text-sm font-medium text-foreground">Slump Mín (cm)</label>
-                  <input type="number" step="0.5" value={slumpMin} onChange={e => setSlumpMin(e.target.value)} className={inputClass} />
+                  <input type="number" min="0" max="1000" step="0.5" value={slumpMin} onChange={e => setSlumpMin(e.target.value)} className={inputClass} />
                 </div>
                 <div>
                   <label className="text-sm font-medium text-foreground">Slump Máx (cm)</label>
-                  <input type="number" step="0.5" value={slumpMax} onChange={e => setSlumpMax(e.target.value)} className={inputClass} />
+                  <input type="number" min="0" max="1000" step="0.5" value={slumpMax} onChange={e => setSlumpMax(e.target.value)} className={inputClass} />
                 </div>
                 <div>
                   <label className="text-sm font-medium text-foreground">Água add. (L)</label>
-                  <input type="number" step="1" value={waterAdded} onChange={e => setWaterAdded(e.target.value)} placeholder="0" className={inputClass} />
+                  <input type="number" min="0" max="100000" step="1" value={waterAdded} onChange={e => setWaterAdded(e.target.value)} placeholder="0" className={inputClass} />
                 </div>
                 <div>
                   <label className="text-sm font-medium text-foreground">Valor/m³ (R$)</label>
-                  <input type="number" step="1" value={costPerM3} onChange={e => setCostPerM3(e.target.value)} placeholder="450" className={inputClass} />
+                  <input type="number" min="0" max="10000000" step="1" value={costPerM3} onChange={e => setCostPerM3(e.target.value)} placeholder="450" className={inputClass} />
                 </div>
               </div>
             </div>
@@ -348,7 +378,7 @@ export default function PavimentoDetailPage() {
             {/* Observation */}
             <div>
               <label className="text-sm font-medium text-foreground">Observação</label>
-              <textarea value={observation} onChange={e => setObservation(e.target.value)} placeholder="Observações sobre o caminhão..." rows={2}
+              <textarea value={observation} onChange={e => setObservation(e.target.value)} placeholder="Observações sobre o caminhão..." rows={2} maxLength={1000}
                 className={cn(inputClass, 'resize-none')} />
             </div>
           </div>
@@ -380,7 +410,7 @@ export default function PavimentoDetailPage() {
             </div>
             <div>
               <label className="text-sm font-medium text-foreground">MPa Resultado</label>
-              <input type="number" step="0.1" value={spMpa} onChange={e => setSpMpa(e.target.value)} placeholder="21.0" className={inputClass} />
+              <input type="number" min="0" max="1000" step="0.1" value={spMpa} onChange={e => setSpMpa(e.target.value)} placeholder="21.0" className={inputClass} />
             </div>
             <div>
               <label className="text-sm font-medium text-foreground">Data de Ruptura</label>

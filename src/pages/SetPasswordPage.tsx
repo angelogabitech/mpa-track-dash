@@ -88,6 +88,7 @@ export default function SetPasswordPage() {
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
                 minLength={8}
+                maxLength={128}
                 required
               />
             </div>
@@ -100,6 +101,7 @@ export default function SetPasswordPage() {
                 value={confirmation}
                 onChange={(event) => setConfirmation(event.target.value)}
                 minLength={8}
+                maxLength={128}
                 required
               />
             </div>

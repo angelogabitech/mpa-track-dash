@@ -1,6 +1,7 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useRef, useState, ReactNode } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface AuthContextType {
   user: User | null;
@@ -20,10 +21,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const manualSignOutRef = useRef(false);
 
   useEffect(() => {
     // Set up listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, newSession) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, newSession) => {
+      if (event === 'SIGNED_OUT' && !manualSignOutRef.current) {
+        toast.warning('Sua sessão foi encerrada porque esta conta entrou em outro dispositivo.');
+      }
+      if (event === 'SIGNED_OUT') manualSignOutRef.current = false;
+
       setSession(newSession);
       setUser(newSession?.user ?? null);
       setLoading(false);
@@ -56,7 +63,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
-    return { error };
+    if (error) return { error };
+
+    const { error: revokeError } = await supabase.auth.signOut({ scope: 'others' });
+    if (revokeError) {
+      manualSignOutRef.current = true;
+      await supabase.auth.signOut({ scope: 'local' });
+      return { error: new Error('Não foi possível garantir a sessão única. Tente novamente.') };
+    }
+
+    return { error: null };
   };
 
   const requestPasswordReset = async (email: string) => {
@@ -72,7 +88,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    manualSignOutRef.current = true;
+    const { error } = await supabase.auth.signOut({ scope: 'local' });
+    if (error) {
+      manualSignOutRef.current = false;
+      toast.error('Não foi possível encerrar a sessão.');
+    }
   };
 
   return (
